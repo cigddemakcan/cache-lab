@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cache-lab-postgres
+    environment:
+      POSTGRES_DB: cachelab
+      POSTGRES_USER: cachelab
+      POSTGRES_PASSWORD: cachelab
+    ports:
+      # Hostta 5432 kullanan yerel PostgreSQL ile çakışmaması için.
+      - "55432:5432"
+    volumes:
+      - cache-lab-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cachelab -d cachelab"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: cache-lab-redis
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - 64mb
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache-lab-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cache-lab-postgres-data:
+  cache-lab-redis-data:

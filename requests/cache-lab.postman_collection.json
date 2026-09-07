@@ -1,0 +1,188 @@
+{
+  "info": {
+    "_postman_id": "95357cf1-b0a2-4bd3-9622-b0f91335c71a",
+    "name": "CacheLab - Redis and Spring Cache",
+    "description": "Run the requests in folder order. Only one Product entity is used across every cache experiment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "secondBaseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 - Product setup",
+      "item": [
+        {
+          "name": "List seeded products",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/products"
+          }
+        },
+        {
+          "name": "Create product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Laptop Stand\",\n  \"category\": \"ACCESSORY\",\n  \"price\": 1299.90,\n  \"stock\": 30\n}"
+            },
+            "url": "{{baseUrl}}/api/products"
+          }
+        },
+        {
+          "name": "Update product and invalidate caches",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mechanical Keyboard\",\n  \"category\": \"ACCESSORY\",\n  \"price\": 2799.90,\n  \"stock\": 25\n}"
+            },
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 - Cache basics",
+      "item": [
+        {
+          "name": "Compare DB, manual cold-warm, declarative cold-warm",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/compare/{{productId}}"
+          }
+        },
+        {
+          "name": "Manual cache read",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/manual/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Declarative cache read",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/declarative/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Inspect TTL",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/ttl/{{productId}}"
+          }
+        },
+        {
+          "name": "Inspect hit-miss stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/stats"
+          }
+        },
+        {
+          "name": "Evict every cache variant",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/cache-lab/cache/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 - Self-invocation",
+      "item": [
+        {
+          "name": "Broken - same bean bypasses proxy",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/experiments/self-invocation/broken/{{productId}}"
+          }
+        },
+        {
+          "name": "Fixed - cached method is on another bean",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/experiments/self-invocation/fixed/{{productId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4 - Transaction rollback",
+      "item": [
+        {
+          "name": "Broken - cache write before commit",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/cache-lab/experiments/rollback/broken/{{productId}}?attemptedPrice=99999.00"
+          }
+        },
+        {
+          "name": "Fixed - cache eviction after commit",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/cache-lab/experiments/rollback/fixed/{{productId}}?attemptedPrice=88888.00"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5 - Two instances and local cache",
+      "item": [
+        {
+          "name": "Warm local cache on instance A",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/cache-lab/local/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Warm local cache on instance B",
+          "request": {
+            "method": "GET",
+            "url": "{{secondBaseUrl}}/api/cache-lab/local/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Read stale local value from instance B after update on A",
+          "request": {
+            "method": "GET",
+            "url": "{{secondBaseUrl}}/api/cache-lab/local/products/{{productId}}"
+          }
+        },
+        {
+          "name": "Read shared Redis value from instance B",
+          "request": {
+            "method": "GET",
+            "url": "{{secondBaseUrl}}/api/cache-lab/declarative/products/{{productId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
